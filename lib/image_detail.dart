@@ -38,7 +38,7 @@ class _DetailScreenState extends State<DetailScreen> {
         await textRecognizer.processImage(visionImage);
 
     String pattern =
-        r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?)*$";
+        r"$";
     RegExp regEx = RegExp(pattern);
 
     String mailAddress = "";
@@ -125,7 +125,7 @@ class _DetailScreenState extends State<DetailScreen> {
                           Padding(
                             padding: const EdgeInsets.only(bottom: 8.0),
                             child: Text(
-                              "Identified emails",
+                              "Identified text",
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
