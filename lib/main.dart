@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vision/image_detail.dart';
+import 'package:flutter_vision/objdetection.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -22,7 +23,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Capstone',
+      title: 'Capste',
       theme: ThemeData(
         primarySwatch: Colors.red,
       ),
@@ -43,7 +44,7 @@ class _CameraScreenState extends State<CameraScreen> {
   void initState() {
     super.initState();
 
-    _controller = CameraController(cameras[0], ResolutionPreset.medium);
+    _controller = CameraController(cameras[0], ResolutionPreset.high);
     _controller.initialize().then((_) {
       if (!mounted) {
         return;
@@ -98,7 +99,7 @@ class _CameraScreenState extends State<CameraScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('ML Vision'),
+        title: Text('Capstone2'),
       ),
       body: _controller.value.isInitialized
           ? Stack(
@@ -107,10 +108,32 @@ class _CameraScreenState extends State<CameraScreen> {
                 Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: Container(
-                    alignment: Alignment.bottomCenter,
+                    alignment: Alignment.bottomRight,
                     child: RaisedButton.icon(
                       icon: Icon(Icons.camera),
-                      label: Text("Click"),
+                      label: Text("Object Detection"),
+                      onPressed: () async {
+                        await _takePicture().then((String path) {
+                          if (path != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ObjectScreen(path),
+                              ),
+                            );
+                          }
+                        });
+                      },
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Container(
+                    alignment: Alignment.bottomLeft,
+                    child: RaisedButton.icon(
+                      icon: Icon(Icons.camera),
+                      label: Text("Text Detection"),
                       onPressed: () async {
                         await _takePicture().then((String path) {
                           if (path != null) {

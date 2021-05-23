@@ -4,15 +4,15 @@ import 'dart:io';
 import 'dart:ui';
 import 'dart:async';
 
-class DetailScreen extends StatefulWidget {
+class ObjectScreen extends StatefulWidget {
   final String imagePath;
-  DetailScreen(this.imagePath);
+  ObjectScreen(this.imagePath);
 
   @override
   _DetailScreenState createState() => new _DetailScreenState(imagePath);
 }
 
-class _DetailScreenState extends State<DetailScreen> {
+class _DetailScreenState extends State<ObjectScreen> {
   _DetailScreenState(this.path);
 
   final String path;
@@ -31,31 +31,19 @@ class _DetailScreenState extends State<DetailScreen> {
     final FirebaseVisionImage visionImage =
         FirebaseVisionImage.fromFile(imageFile);
 
-    final TextRecognizer textRecognizer =
-        FirebaseVision.instance.textRecognizer();
+    final ImageLabeler textRecognizer = FirebaseVision.instance.imageLabeler();
 
-    final VisionText visionText =
+    final List<ImageLabel> visionText =
         await textRecognizer.processImage(visionImage);
+    String result="";
 
-    String pattern =
-        r"$";
-    RegExp regEx = RegExp(pattern);
-
-    String mailAddress = "";
-    for (TextBlock block in visionText.blocks) {
-      for (TextLine line in block.lines) {
-        if (regEx.hasMatch(line.text)) {
-          mailAddress += line.text + '\n';
-          for (TextElement element in line.elements) {
-            _elements.add(element);
-          }
-        }
-      }
+    for (ImageLabel block in visionText) {
+      result += block.text +"  "+block.confidence.toString() +'\n';
     }
 
     if (this.mounted) {
       setState(() {
-        recognizedText = mailAddress;
+        recognizedText = result;
       });
     }
   }
@@ -89,7 +77,7 @@ class _DetailScreenState extends State<DetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Text Detection"),
+        title: Text("Object Detection"),
       ),
       body: _imageSize != null
           ? Stack(
@@ -99,8 +87,6 @@ class _DetailScreenState extends State<DetailScreen> {
                     width: double.maxFinite,
                     color: Colors.black,
                     child: CustomPaint(
-                      foregroundPainter:
-                          TextDetectorPainter(_imageSize, _elements),
                       child: AspectRatio(
                         aspectRatio: _imageSize.aspectRatio,
                         child: Image.file(
@@ -125,7 +111,7 @@ class _DetailScreenState extends State<DetailScreen> {
                           Padding(
                             padding: const EdgeInsets.only(bottom: 8.0),
                             child: Text(
-                              "Identified text",
+                              "Identified Objects",
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -154,41 +140,5 @@ class _DetailScreenState extends State<DetailScreen> {
               ),
             ),
     );
-  }
-}
-
-class TextDetectorPainter extends CustomPainter {
-  TextDetectorPainter(this.absoluteImageSize, this.elements);
-
-  final Size absoluteImageSize;
-  final List<TextElement> elements;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final double scaleX = size.width / absoluteImageSize.width;
-    final double scaleY = size.height / absoluteImageSize.height;
-
-    Rect scaleRect(TextContainer container) {
-      return Rect.fromLTRB(
-        container.boundingBox.left * scaleX,
-        container.boundingBox.top * scaleY,
-        container.boundingBox.right * scaleX,
-        container.boundingBox.bottom * scaleY,
-      );
-    }
-
-    final Paint paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..color = Colors.red
-      ..strokeWidth = 2.0;
-
-    for (TextElement element in elements) {
-      canvas.drawRect(scaleRect(element), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(TextDetectorPainter oldDelegate) {
-    return true;
   }
 }
