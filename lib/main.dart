@@ -1,13 +1,12 @@
-import 'dart:io';
-
-import 'package:camera/camera.dart';
+import 'package:bubbled_navigation_bar/bubbled_navigation_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_vision/image_detail.dart';
-import 'package:flutter_vision/objdetection.dart';
-import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:flutter/rendering.dart';
+import 'package:bottom_navy_bar/bottom_navy_bar.dart';
+import 'package:flutter_vision/mainscreen.dart';
+import 'package:flutter_vision/settingscreen.dart';
+import 'drawerscreen.dart';
+import 'package:camera/camera.dart';
 
-List<CameraDescription> cameras = [];
 
 Future<void> main() async {
   try {
@@ -27,136 +26,90 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.red,
       ),
-      home: CameraScreen(),
+      home: mainscreen(UniqueKey()),
     );
   }
 }
 
-class CameraScreen extends StatefulWidget {
+class mainscreen extends StatefulWidget {
   @override
-  _CameraScreenState createState() => _CameraScreenState();
+  static String routeName = '/home';
+  int screenindex = 0;
+  mainscreen(Key key) : super(key: key);
+  State<StatefulWidget> createState() {
+    return mainscreenState();
+  }
 }
 
-class _CameraScreenState extends State<CameraScreen> {
-  CameraController _controller;
+class mainscreenState extends State<mainscreen> {
+  PageController _pageController;
+  void _changescreen(int index) {
+    setState(() {
+      widget.screenindex = index;
+    });
+  }
 
+  final List<Map<String, Object>> _screens = [
+    {
+      'Title': 'Capstone',
+      'screen': CameraScreen(),
+    },
+    {
+      'Title': 'Settings',
+      'screen': settingscreen(),
+    }
+  ];
   @override
   void initState() {
     super.initState();
-
-    _controller = CameraController(cameras[0], ResolutionPreset.high);
-    _controller.initialize().then((_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {});
-    });
+    _pageController = PageController();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
-  Future<String> _takePicture() async {
-    if (!_controller.value.isInitialized) {
-      print("Controller is not initialized");
-      return null;
-    }
-
-    // Formatting Date and Time
-    String dateTime = DateFormat.yMMMd()
-        .addPattern('-')
-        .add_Hms()
-        .format(DateTime.now())
-        .toString();
-
-    String formattedDateTime = dateTime.replaceAll(' ', '');
-    print("Formatted: $formattedDateTime");
-
-    final Directory appDocDir = await getApplicationDocumentsDirectory();
-    final String visionDir = '${appDocDir.path}/Photos/Vision\ Images';
-    await Directory(visionDir).create(recursive: true);
-    final String imagePath = '$visionDir/image_$formattedDateTime.jpg';
-
-    if (_controller.value.isTakingPicture) {
-      print("Processing is progress ...");
-      return null;
-    }
-
-    try {
-      await _controller.takePicture(imagePath);
-    } on CameraException catch (e) {
-      print("Camera Exception: $e");
-      return null;
-    }
-
-    return imagePath;
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Capstone2'),
-      ),
-      body: _controller.value.isInitialized
-          ? Stack(
-              children: <Widget>[
-                CameraPreview(_controller),
-                Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Container(
-                    alignment: Alignment.bottomRight,
-                    child: RaisedButton.icon(
-                      icon: Icon(Icons.camera),
-                      label: Text("Object Detection"),
-                      onPressed: () async {
-                        await _takePicture().then((String path) {
-                          if (path != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ObjectScreen(path),
-                              ),
-                            );
-                          }
-                        });
-                      },
+    return  Scaffold(
+            appBar: PreferredSize(
+                preferredSize: Size.fromHeight(60), // here the desired height
+                child: AppBar(
+                  elevation: 10,
+                  title: Text(_screens[widget.screenindex]['Title']),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(0),
                     ),
                   ),
+                  centerTitle: true,
+                )),
+            drawer: drawerScreen(),
+            body: _screens[widget.screenindex]['screen'],
+            bottomNavigationBar: BottomNavyBar(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              selectedIndex: widget.screenindex,
+              showElevation: true, // use this to remove appBar's elevation
+              onItemSelected: (index) => setState(() {
+                widget.screenindex = index;
+                _changescreen(index);
+                _pageController.animateToPage(index,
+                    duration: Duration(milliseconds: 300), curve: Curves.ease);
+              }),
+              items: [
+                BottomNavyBarItem(
+                  icon: Icon(Icons.home),
+                  inactiveColor: Colors.blueGrey,
+                  title: Text('Home'),
+                  activeColor: Theme.of(context).accentColor,
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Container(
-                    alignment: Alignment.bottomLeft,
-                    child: RaisedButton.icon(
-                      icon: Icon(Icons.camera),
-                      label: Text("Text Detection"),
-                      onPressed: () async {
-                        await _takePicture().then((String path) {
-                          if (path != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => DetailScreen(path),
-                              ),
-                            );
-                          }
-                        });
-                      },
-                    ),
-                  ),
-                )
+                BottomNavyBarItem(
+                    inactiveColor: Colors.blueGrey,
+                    icon: Icon(Icons.settings),
+                    title: Text('Settings'),
+                    activeColor: Theme.of(context).accentColor),
               ],
-            )
-          : Container(
-              color: Colors.black,
-              child: Center(
-                child: CircularProgressIndicator(),
-              ),
-            ),
-    );
+            ));
   }
 }
