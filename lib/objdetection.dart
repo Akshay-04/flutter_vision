@@ -1,8 +1,10 @@
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'dart:io';
 import 'dart:ui';
 import 'dart:async';
+import 'package:translator/translator.dart';
 
 class ObjectScreen extends StatefulWidget {
   final String imagePath;
@@ -20,6 +22,8 @@ class _DetailScreenState extends State<ObjectScreen> {
   Size _imageSize;
   List<TextElement> _elements = [];
   String recognizedText = "Loading ...";
+  String finalresult = "Loading";
+  String texttranslation = '';
 
   void _initializeVision() async {
     final File imageFile = File(path);
@@ -35,15 +39,21 @@ class _DetailScreenState extends State<ObjectScreen> {
 
     final List<ImageLabel> visionText =
         await textRecognizer.processImage(visionImage);
-    String result="";
-
+    String result = "";
+    String obj = visionText[0].text;
     for (ImageLabel block in visionText) {
-      result += block.text +"  "+block.confidence.toString() +'\n';
+      result += block.text + "  " + '\n';
     }
+    final translator = GoogleTranslator();
+
+    Translation translatedtext =
+        await translator.translate(result, from: 'en', to: 'hi');
 
     if (this.mounted) {
       setState(() {
         recognizedText = result;
+        finalresult = obj;
+        texttranslation = translatedtext.text;
       });
     }
   }
@@ -75,6 +85,18 @@ class _DetailScreenState extends State<ObjectScreen> {
 
   @override
   Widget build(BuildContext context) {
+    FlutterTts flutterTts = FlutterTts();
+    Future speaktext() async {
+      await flutterTts.setLanguage("hi-IN");
+
+      await flutterTts.setSpeechRate(1.0);
+
+      await flutterTts.setVolume(1.0);
+      await flutterTts.setQueueMode(1);
+      await flutterTts.setPitch(1.0);
+      await flutterTts.speak(finalresult);
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Object Detection"),
@@ -107,6 +129,9 @@ class _DetailScreenState extends State<ObjectScreen> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
+                          ElevatedButton(
+                              onPressed: () => speaktext(),
+                              child: Text('Speak')),
                           Row(),
                           Padding(
                             padding: const EdgeInsets.only(bottom: 8.0),
@@ -123,6 +148,14 @@ class _DetailScreenState extends State<ObjectScreen> {
                             child: SingleChildScrollView(
                               child: Text(
                                 recognizedText,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            height: 60,
+                            child: SingleChildScrollView(
+                              child: Text(
+                                texttranslation,
                               ),
                             ),
                           ),

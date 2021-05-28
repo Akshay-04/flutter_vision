@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'dart:io';
 import 'dart:ui';
 import 'dart:async';
+import 'package:translator/translator.dart';
 
 class DetailScreen extends StatefulWidget {
   final String imagePath;
@@ -20,6 +22,7 @@ class _DetailScreenState extends State<DetailScreen> {
   Size _imageSize;
   List<TextElement> _elements = [];
   String recognizedText = "Loading ...";
+  String texttranslation = '';
 
   void _initializeVision() async {
     final File imageFile = File(path);
@@ -37,25 +40,24 @@ class _DetailScreenState extends State<DetailScreen> {
     final VisionText visionText =
         await textRecognizer.processImage(visionImage);
 
-    String pattern =
-        r"$";
-    RegExp regEx = RegExp(pattern);
-
-    String mailAddress = "";
+    String textfound = "";
     for (TextBlock block in visionText.blocks) {
       for (TextLine line in block.lines) {
-        if (regEx.hasMatch(line.text)) {
-          mailAddress += line.text + '\n';
-          for (TextElement element in line.elements) {
-            _elements.add(element);
-          }
+        textfound += line.text + '\n';
+        for (TextElement element in line.elements) {
+          _elements.add(element);
         }
       }
     }
+    final translator = GoogleTranslator();
+
+    Translation translatedtext =
+        await translator.translate(textfound, from: 'en', to: 'hi');
 
     if (this.mounted) {
       setState(() {
-        recognizedText = mailAddress;
+        recognizedText = textfound;
+        texttranslation = translatedtext.text;
       });
     }
   }
@@ -87,6 +89,20 @@ class _DetailScreenState extends State<DetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    FlutterTts flutterTts = FlutterTts();
+    Future speaktext() async {
+      await flutterTts.setLanguage("hi-IN");
+
+      await flutterTts.setSpeechRate(1.0);
+
+      await flutterTts.setVolume(1.0);
+
+      await flutterTts.setPitch(1.0);
+      await flutterTts.setQueueMode(1);
+      await flutterTts.speak(recognizedText);
+      await flutterTts.speak(texttranslation);
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Text Detection"),
@@ -121,6 +137,9 @@ class _DetailScreenState extends State<DetailScreen> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
+                          ElevatedButton(
+                              onPressed: () => speaktext(),
+                              child: Text('Speak')),
                           Row(),
                           Padding(
                             padding: const EdgeInsets.only(bottom: 8.0),
@@ -137,6 +156,14 @@ class _DetailScreenState extends State<DetailScreen> {
                             child: SingleChildScrollView(
                               child: Text(
                                 recognizedText,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            height: 60,
+                            child: SingleChildScrollView(
+                              child: Text(
+                                texttranslation,
                               ),
                             ),
                           ),
