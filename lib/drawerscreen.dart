@@ -12,8 +12,8 @@ class drawerScreen extends StatelessWidget {
           DrawerHeader(
             decoration: BoxDecoration(
               image: DecorationImage(
-                image: AssetImage("assets/logo.jpeg"),
-                fit: BoxFit.cover
+                image: AssetImage("assets/logo.png"),
+                fit: BoxFit.scaleDown
               )
             ),
           ),
